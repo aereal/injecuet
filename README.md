@@ -1,4 +1,4 @@
-![CI][ci-status]
+[![status][ci-status-badge]][ci-status]
 [![PkgGoDev][pkg-go-dev-badge]][pkg-go-dev]
 
 # injecuet
@@ -81,7 +81,8 @@ See LICENSE file.
 
 [pkg-go-dev]: https://pkg.go.dev/github.com/aereal/injecuet
 [pkg-go-dev-badge]: https://pkg.go.dev/badge/aereal/injecuet
-[ci-status]: https://github.com/aereal/injecuet/workflows/CI/badge.svg?branch=main
+[ci-status-badge]: https://github.com/aereal/injecuet/workflows/CI/badge.svg?branch=main
+[ci-status]: https://github.com/aereal/injecuet/actions/workflows/CI
 [cuelang]: https://cuelang.org/
 [cue-integrations]: https://cuelang.org/docs/integrations/
 [types-are-values]: https://cuelang.org/docs/concepts/logic/#types-are-values
