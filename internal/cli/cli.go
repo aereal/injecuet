@@ -10,6 +10,14 @@ import (
 	"github.com/aereal/injecuet"
 )
 
+var version string
+
+func init() {
+	if version == "" {
+		version = "latest"
+	}
+}
+
 type App struct {
 	errOut io.Writer
 }
@@ -21,14 +29,21 @@ func (a *App) Run(argv []string) int {
 
 	fs := flag.NewFlagSet(argv[0], flag.ContinueOnError)
 	var (
-		outPath string
+		outPath     string
+		showVersion bool
 	)
 	fs.StringVar(&outPath, "output", "", "output file path. default is stdout")
+	fs.BoolVar(&showVersion, "version", false, "show version")
 	fs.SetOutput(a.errOut)
 	err := fs.Parse(argv[1:])
 	if err == flag.ErrHelp {
 		return 0
 	}
+	if showVersion {
+		fmt.Fprintln(a.errOut, version)
+		return 0
+	}
+
 	if fs.NArg() != 1 {
 		fmt.Fprintln(a.errOut, "input file must be given")
 		return 1
