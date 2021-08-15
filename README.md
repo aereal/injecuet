@@ -53,6 +53,16 @@ cue export ./out.gen.cue
 # }
 ```
 
+You can use injecuet with [ssmwrap][ssmwrap]:
+
+```sh
+cat src.cue
+# secretKey: string @injectvar(APP_SECRET_KEY)
+
+ssmwrap -env-prefix APP_ -recursive injecuet ./src.cue
+# secretKey: "<value from SSM parameter store>" @injectvar(APP_SECRET_KEY)
+```
+
 ## Installation
 
 ```sh
@@ -77,3 +87,4 @@ See LICENSE file.
 [types-are-values]: https://cuelang.org/docs/concepts/logic/#types-are-values
 [cue-modules]: https://cuelang.org/docs/concepts/packages/
 [cue-strconv]: https://pkg.go.dev/cuelang.org/go@v0.4.0/pkg/strconv
+[ssmwrap]: https://github.com/handlename/ssmwrap
