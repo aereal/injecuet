@@ -27,6 +27,8 @@ func TestRun(t *testing.T) {
 		{[]string{"injecuet"}, nil, "input file must be given\n", 1},
 		{[]string{"injecuet", "../../testdata/ok.cue", "../../testdata/not_found.cue"}, nil, "input file must be given\n", 1},
 		{[]string{"injecuet", "missing_file.cue"}, nil, "failed to inject values to file missing_file.cue: cannot parse file(missing_file.cue): open missing_file.cue: no such file or directory\n", 1},
+		{[]string{"injecuet", "-pattern", "[", "-output", "../../testdata/ok.out.cue", "../../testdata/ok.cue"}, nil, "cannot parse pattern: error parsing regexp: missing closing ]: `[`\n", 1},
+		{[]string{"injecuet", "-pattern", "AGE$", "-output", "../../testdata/partial.out.cue", "../../testdata/partial.cue"}, &output{path: "../../testdata/partial.out.cue", content: "{\n\tname: string @injectenv(X_NAME)\n\tage:  string @injectenv(X_AGE)\n}\n"}, "", 0},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("args=%s", strings.Join(tc.argv, " ")), func(t *testing.T) {
