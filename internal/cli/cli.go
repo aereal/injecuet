@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 
 	"cuelang.org/go/cue/format"
 	"github.com/aereal/injecuet"
@@ -31,9 +32,11 @@ func (a *App) Run(argv []string) int {
 	var (
 		outPath     string
 		showVersion bool
+		pattern     string
 	)
 	fs.StringVar(&outPath, "output", "", "output file path. default is stdout")
 	fs.BoolVar(&showVersion, "version", false, "show version")
+	fs.StringVar(&pattern, "pattern", "", "regular expression of environment variables' names to consume; the pattern must be valid as Go's regexp")
 	fs.SetOutput(a.errOut)
 	err := fs.Parse(argv[1:])
 	if err == flag.ErrHelp {
@@ -55,7 +58,16 @@ func (a *App) Run(argv []string) int {
 		return 1
 	}
 	defer close()
-	if err := a.runMain(fs.Arg(0), out); err != nil {
+	var match func(name string) bool
+	if pattern != "" {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			fmt.Fprintf(a.errOut, "cannot parse pattern: %s\n", err)
+			return 1
+		}
+		match = re.MatchString
+	}
+	if err := a.runMain(fs.Arg(0), out, match); err != nil {
 		fmt.Fprintf(a.errOut, "%v\n", err)
 		return 1
 	}
@@ -63,8 +75,8 @@ func (a *App) Run(argv []string) int {
 	return 0
 }
 
-func (a *App) runMain(src string, out io.Writer) error {
-	injector := injecuet.NewEnvironmentInjector()
+func (a *App) runMain(src string, out io.Writer, match func(name string) bool) error {
+	injector := injecuet.NewEnvironmentInjector(match)
 	v, err := injector.Inject(src)
 	if err != nil {
 		return fmt.Errorf("failed to inject values to file %s: %w", src, err)

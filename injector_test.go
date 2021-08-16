@@ -3,6 +3,7 @@ package injecuet
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -15,10 +16,12 @@ func TestInjectOK(t *testing.T) {
 		dataPath string
 		want     string
 		envs     map[string]string
+		match    func(name string) bool
 	}
 	cases := []testCase{
-		{"./testdata/ok.cue", "name: \"aereal\" @injectenv(X_NAME)\n", map[string]string{"X_NAME": "aereal"}},
-		{"./testdata/not_found.cue", "name: string @injectenv(X_UNKNOWN)\n", map[string]string{"X_NAME": "aereal"}},
+		{"./testdata/ok.cue", "name: \"aereal\" @injectenv(X_NAME)\n", map[string]string{"X_NAME": "aereal"}, matchAll},
+		{"./testdata/not_found.cue", "name: string @injectenv(X_UNKNOWN)\n", map[string]string{"X_NAME": "aereal"}, matchAll},
+		{"./testdata/partial.cue", "{\n\tname: string @injectenv(X_NAME)\n\tage:  \"17\"  @injectenv(X_AGE)\n}", map[string]string{"X_NAME": "aereal", "X_AGE": "17"}, func(name string) bool { return strings.HasSuffix(name, "AGE") }},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("dataPath=%s", tc.dataPath), func(t *testing.T) {
@@ -31,7 +34,7 @@ func TestInjectOK(t *testing.T) {
 				}
 			}()
 
-			injector := NewEnvironmentInjector()
+			injector := NewEnvironmentInjector(tc.match)
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)

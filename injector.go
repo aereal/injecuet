@@ -13,15 +13,22 @@ import (
 var (
 	alwaysReturn = func(_ cue.Value) bool { return true }
 	attrKey      = "injectenv"
+	matchAll     = func(_ string) bool { return true }
 )
 
 // NewEnvironmentInjector returns an new Injector that injects environment variables.
 // The injected environment variables determined this function called.
 // Modified environment variables are not respected after creating an Injector.
-func NewEnvironmentInjector() *Injector {
+func NewEnvironmentInjector(match func(name string) bool) *Injector {
+	if match == nil {
+		match = matchAll
+	}
 	injector := &Injector{injections: map[string]string{}}
 	for _, pair := range os.Environ() {
 		kv := strings.SplitN(pair, "=", 2)
+		if !match(kv[0]) {
+			continue
+		}
 		injector.injections[kv[0]] = kv[1]
 	}
 	return injector
