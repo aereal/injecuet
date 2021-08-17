@@ -40,6 +40,26 @@ type Injector struct {
 	injections map[string]string
 }
 
+func walk(v cue.Value, f func(v cue.Value)) {
+	switch v.Kind() {
+	case cue.StructKind:
+		st, _ := v.Struct()
+		fields := st.Fields(cue.All())
+		for fields.Next() {
+			fv := fields.Value()
+			walk(fv, f) // TODO: use goto?
+		}
+	case cue.ListKind:
+		list, _ := v.List()
+		for list.Next() {
+			lv := list.Value()
+			walk(lv, f) // TODO: use goto?
+		}
+	default:
+		f(v)
+	}
+}
+
 // Inject injects provided injection values to CUE document in srcPath.
 func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	f, err := parser.ParseFile(srcPath, nil)
@@ -51,8 +71,8 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	if i.injections == nil {
 		return doc, nil
 	}
-	doc.Walk(
-		alwaysReturn,
+	walk(
+		doc,
 		func(value cue.Value) {
 			attr := value.Attribute(attrKey)
 			if err := attr.Err(); err != nil {
