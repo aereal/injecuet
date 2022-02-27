@@ -28,17 +28,17 @@ You can also use [CUE modules][cue-modules] such as [strconv][cue-strconv] to pa
 
 ```sh
 cat src.cue
-# name: string @injectvar(USER_NAME)
+# name: string @inject(env=USER_NAME)
 
 env USER_NAME=aereal injecuet ./src.cue
-# name: "aereal" @injectvar(USER_NAME)
+# name: "aereal" @inject(env=USER_NAME)
 ```
 
 ```sh
 cat complex.cue
 # import "strconv"
 # 
-# #varAge: string @injectvar(AGE)
+# #varAge: string @inject(env=AGE)
 # age: strconv.Atoi(#varAge)
 
 env AGE=17 injecuet -output ./out.gen.cue ./src.cue
@@ -57,10 +57,10 @@ You can use injecuet with [ssmwrap][ssmwrap]:
 
 ```sh
 cat src.cue
-# secretKey: string @injectvar(APP_SECRET_KEY)
+# secretKey: string @inject(env=APP_SECRET_KEY)
 
 ssmwrap -env-prefix APP_ -recursive injecuet ./src.cue
-# secretKey: "<value from SSM parameter store>" @injectvar(APP_SECRET_KEY)
+# secretKey: "<value from SSM parameter store>" @inject(env=APP_SECRET_KEY)
 ```
 
 ## Installation
