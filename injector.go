@@ -2,7 +2,6 @@ package injecuet
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -11,35 +10,34 @@ import (
 )
 
 var (
-	alwaysReturn = func(_ cue.Value) bool { return true }
-	matchAll     = func(_ string) bool { return true }
+	matchAll = func(_ string) bool { return true }
 
 	attrKey              = "inject"
 	deprecatedOldAttrKey = "injectenv"
 )
 
 // NewEnvironmentInjector returns an new Injector that injects environment variables.
-// The injected environment variables determined this function called.
-// Modified environment variables are not respected after creating an Injector.
+//
+// Deprecated: use NewInjector
 func NewEnvironmentInjector(match func(name string) bool) *Injector {
-	if match == nil {
-		match = matchAll
-	}
-	injector := &Injector{injections: map[string]string{}}
-	for _, pair := range os.Environ() {
-		kv := strings.SplitN(pair, "=", 2)
-		if !match(kv[0]) {
-			continue
-		}
-		injector.injections[kv[0]] = kv[1]
-	}
+	envFillter := NewEnvFillter(match)
+	injector := &Injector{fillers: map[string]Filler{envFillter.Name(): envFillter}}
 	return injector
+}
+
+// NewInjector creates new Injector.
+func NewInjector(fillers ...Filler) *Injector {
+	i := &Injector{fillers: map[string]Filler{}}
+	for _, f := range fillers {
+		i.fillers[f.Name()] = f
+	}
+	return i
 }
 
 // Injector is used for injecting provided values.
 // The injection values are given from several constructors.
 type Injector struct {
-	injections map[string]string
+	fillers map[string]Filler
 }
 
 func walk(v cue.Value, f func(v cue.Value)) {
@@ -70,43 +68,49 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	}
 	cc := cuecontext.New()
 	doc := cc.BuildFile(f)
-	if i.injections == nil {
-		return doc, nil
-	}
 	walk(
 		doc,
 		func(value cue.Value) {
-			key := parseKey(value)
-			if key == "" {
+			ret, err := parseAttribute(value)
+			if err != nil {
+				// invalid attribute
 				return
 			}
-			filler, ok := i.injections[key]
-			if !ok {
+			filler := i.fillers[ret.fillerName]
+			if filler == nil {
+				// not supported filler
 				return
 			}
-			filled := doc.FillPath(value.Path(), filler)
-			if err := filled.Err(); err != nil {
-				return
-			}
-			doc = filled
+			_ = filler.FillValue(&doc, ret.key, value)
 		},
 	)
 	return doc, nil
 }
 
-func parseKey(value cue.Value) string {
-	attr := value.Attribute(attrKey)
-	if err := attr.Err(); err != nil {
-		return parseDeprecatedAttributeFormatKey(value)
-	}
-	parts := strings.SplitN(attr.Contents(), "=", 2)
-	return parts[1]
+type attributeParseResult struct {
+	fillerName string
+	key        string
 }
 
-func parseDeprecatedAttributeFormatKey(value cue.Value) string {
+func parseAttribute(value cue.Value) (*attributeParseResult, error) {
+	if v, _ := parseDeprecatedAttribute(value); v != nil {
+		return v, nil
+	}
+	attr := value.Attribute(attrKey)
+	if err := attr.Err(); err != nil {
+		return nil, err
+	}
+	parts := strings.SplitN(attr.Contents(), "=", 2)
+	return &attributeParseResult{fillerName: parts[0], key: parts[1]}, nil
+}
+
+func parseDeprecatedAttribute(value cue.Value) (*attributeParseResult, error) {
 	attr := value.Attribute(deprecatedOldAttrKey)
 	if err := attr.Err(); err != nil {
-		return ""
+		return nil, err
 	}
-	return attr.Contents()
+	return &attributeParseResult{
+		fillerName: fillerNameEnv,
+		key:        attr.Contents(),
+	}, nil
 }
