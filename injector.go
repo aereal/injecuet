@@ -12,8 +12,10 @@ import (
 
 var (
 	alwaysReturn = func(_ cue.Value) bool { return true }
-	attrKey      = "injectenv"
 	matchAll     = func(_ string) bool { return true }
+
+	attrKey              = "inject"
+	deprecatedOldAttrKey = "injectenv"
 )
 
 // NewEnvironmentInjector returns an new Injector that injects environment variables.
@@ -74,12 +76,11 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	walk(
 		doc,
 		func(value cue.Value) {
-			attr := value.Attribute(attrKey)
-			if err := attr.Err(); err != nil {
+			key := parseKey(value)
+			if key == "" {
 				return
 			}
-			av := attr.Contents()
-			filler, ok := i.injections[av]
+			filler, ok := i.injections[key]
 			if !ok {
 				return
 			}
@@ -91,4 +92,21 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 		},
 	)
 	return doc, nil
+}
+
+func parseKey(value cue.Value) string {
+	attr := value.Attribute(attrKey)
+	if err := attr.Err(); err != nil {
+		return parseDeprecatedAttributeFormatKey(value)
+	}
+	parts := strings.SplitN(attr.Contents(), "=", 2)
+	return parts[1]
+}
+
+func parseDeprecatedAttributeFormatKey(value cue.Value) string {
+	attr := value.Attribute(deprecatedOldAttrKey)
+	if err := attr.Err(); err != nil {
+		return ""
+	}
+	return attr.Contents()
 }
