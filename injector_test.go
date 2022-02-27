@@ -37,7 +37,7 @@ func TestInjectOK(t *testing.T) {
 				}
 			}()
 
-			injector := NewEnvironmentInjector(tc.match)
+			injector := NewInjector(NewEnvFillter(tc.match))
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)
