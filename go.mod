@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/compute v1.5.0 // indirect
 	cloud.google.com/go/iam v0.2.0 // indirect
 	cloud.google.com/go/storage v1.21.0 // indirect
-	cuelang.org/go v0.4.0
+	cuelang.org/go v0.4.2
 	github.com/Azure/azure-sdk-for-go v61.6.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
 	github.com/aws/aws-sdk-go v1.43.7 // indirect
