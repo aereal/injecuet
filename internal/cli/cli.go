@@ -76,7 +76,7 @@ func (a *App) Run(argv []string) int {
 }
 
 func (a *App) runMain(src string, out io.Writer, match func(name string) bool) error {
-	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match))
+	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match), injecuet.WithTFState())
 	v, err := injector.Inject(src)
 	if err != nil {
 		return fmt.Errorf("failed to inject values to file %s: %w", src, err)
