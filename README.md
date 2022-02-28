@@ -13,6 +13,7 @@ You can pass emitted new CUE document as `cue eval` or `cue export` argument to 
 Current supported injection sources:
 
 - environment variables
+- Terraform state
 
 ## Concept
 
@@ -25,6 +26,8 @@ For example, if you expected the injected values must not be empty, you just wri
 You can also use [CUE modules][cue-modules] such as [strconv][cue-strconv] to parse injected string as integers.
 
 ## Synopsis
+
+### Environment variables
 
 ```sh
 cat src.cue
@@ -63,6 +66,13 @@ ssmwrap -env-prefix APP_ -recursive injecuet ./src.cue
 # secretKey: "<value from SSM parameter store>" @inject(env=APP_SECRET_KEY)
 ```
 
+### Terraform state
+
+You can pass file path or URL to `stateURL`.
+Supported URL formats are described on [tfstate-lookup][].
+
+See examples.
+
 ## Installation
 
 ```sh
@@ -89,3 +99,4 @@ See LICENSE file.
 [cue-modules]: https://cuelang.org/docs/concepts/packages/
 [cue-strconv]: https://pkg.go.dev/cuelang.org/go@v0.4.0/pkg/strconv
 [ssmwrap]: https://github.com/handlename/ssmwrap
+[tfstate-lookup]: https://github.com/fujiwara/tfstate-lookup

@@ -38,7 +38,40 @@ func TestInjectOK(t *testing.T) {
 				}
 			}()
 
-			injector := NewInjector(NewEnvFillter(tc.match))
+			injector := NewInjector(WithEnvironmentVariables(tc.match))
+			got, err := injector.Inject(tc.dataPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cc := cuecontext.New()
+			formattedWant, err := format.Node(cc.CompileString(tc.want).Syntax())
+			if err != nil {
+				t.Fatalf("cannot format want: %s", err)
+			}
+			formattedGot, err := format.Node(got.Syntax())
+			if err != nil {
+				t.Fatalf("cannot format got: %s", err)
+			}
+			if !cmp.Equal(string(formattedWant), string(formattedGot)) {
+				diff := cmp.Diff(string(formattedWant), string(formattedGot))
+				t.Errorf("(-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInject_tfstate(t *testing.T) {
+	type testCase struct {
+		dataPath    string
+		want        string
+		tfstatePath string
+	}
+	cases := []testCase{
+		{"./testdata/ok_tfstate.cue", "{\n\t@inject(tfstate,stateURL=./terraform/ok/terraform.tfstate)\n\tname: \"aereal\" @inject(tfstate,name=output.user.name)\n\tage:  17       @inject(tfstate,name=output.user.age)\n}", "./testdata/terraform/ok/terraform.tfstate"},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("dataPath=%s tfstatePath=%s", tc.dataPath, tc.tfstatePath), func(t *testing.T) {
+			injector := NewInjector(WithTFState())
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)
