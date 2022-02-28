@@ -2,7 +2,6 @@ package injecuet
 
 import (
 	"fmt"
-	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -71,8 +70,8 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	walk(
 		doc,
 		func(value cue.Value) {
-			ret, err := parseAttribute(value)
-			if err != nil {
+			ret := parseAttribute(value)
+			if !ret.valid() {
 				// invalid attribute
 				return
 			}
@@ -90,27 +89,43 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 type attributeParseResult struct {
 	fillerName string
 	key        string
+	err        error
 }
 
-func parseAttribute(value cue.Value) (*attributeParseResult, error) {
-	if v, _ := parseDeprecatedAttribute(value); v != nil {
-		return v, nil
+func (r *attributeParseResult) valid() bool {
+	return r.err == nil
+}
+
+func parseAttribute(value cue.Value) *attributeParseResult {
+	if v := parseDeprecatedAttribute(value); v.valid() {
+		return v
 	}
 	attr := value.Attribute(attrKey)
 	if err := attr.Err(); err != nil {
-		return nil, err
+		return &attributeParseResult{err: err}
 	}
-	parts := strings.SplitN(attr.Contents(), "=", 2)
-	return &attributeParseResult{fillerName: parts[0], key: parts[1]}, nil
+	ret := &attributeParseResult{}
+	for i := 0; i < attr.NumArgs(); i++ {
+		key, value := attr.Arg(i)
+		if value == "" {
+			ret.fillerName = key
+			continue
+		}
+		switch key {
+		case "name":
+			ret.key = value
+		}
+	}
+	return ret
 }
 
-func parseDeprecatedAttribute(value cue.Value) (*attributeParseResult, error) {
+func parseDeprecatedAttribute(value cue.Value) *attributeParseResult {
 	attr := value.Attribute(deprecatedOldAttrKey)
 	if err := attr.Err(); err != nil {
-		return nil, err
+		return &attributeParseResult{err: err}
 	}
 	return &attributeParseResult{
 		fillerName: fillerNameEnv,
 		key:        attr.Contents(),
-	}, nil
+	}
 }
