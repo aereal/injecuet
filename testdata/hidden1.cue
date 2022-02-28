@@ -1,1 +1,1 @@
-_name: string @inject(env=X_NAME)
+_name: string @inject(env,name=X_NAME)

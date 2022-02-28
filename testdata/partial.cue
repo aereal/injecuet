@@ -1,2 +1,2 @@
-name: string @inject(env=X_NAME)
-age: string @inject(env=X_AGE)
+name: string @inject(env,name=X_NAME)
+age: string @inject(env,name=X_AGE)

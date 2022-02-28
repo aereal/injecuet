@@ -2,7 +2,6 @@ package injecuet
 
 import (
 	"fmt"
-	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -105,8 +104,19 @@ func parseAttribute(value cue.Value) *attributeParseResult {
 	if err := attr.Err(); err != nil {
 		return &attributeParseResult{err: err}
 	}
-	parts := strings.SplitN(attr.Contents(), "=", 2)
-	return &attributeParseResult{fillerName: parts[0], key: parts[1]}
+	ret := &attributeParseResult{}
+	for i := 0; i < attr.NumArgs(); i++ {
+		key, value := attr.Arg(i)
+		if value == "" {
+			ret.fillerName = key
+			continue
+		}
+		switch key {
+		case "name":
+			ret.key = value
+		}
+	}
+	return ret
 }
 
 func parseDeprecatedAttribute(value cue.Value) *attributeParseResult {
