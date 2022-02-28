@@ -15,7 +15,7 @@ type Filler interface {
 	Name() string
 
 	// FillValue fills value from the filler's source into given CUE document.
-	FillValue(doc *cue.Value, key string, field cue.Value) error
+	FillValue(doc Document, key string, field cue.Value) error
 }
 
 // NewEnvFiller returns an new Filler that fills environment variables.
@@ -47,13 +47,13 @@ type envFillter struct {
 
 func (f *envFillter) Name() string { return fillerNameEnv }
 
-func (f *envFillter) FillValue(doc *cue.Value, key string, field cue.Value) error {
+func (f *envFillter) FillValue(doc Document, key string, field cue.Value) error {
 	v, ok := f.env[key]
 	if !ok {
 		return fmt.Errorf("value not found: %s", key)
 	}
-	*doc = doc.FillPath(field.Path(), v)
-	return doc.Err()
+	*doc.Value = doc.Value.FillPath(field.Path(), v)
+	return doc.Value.Err()
 }
 
 func NewTFStateFiller(state *tfstate.TFState) Filler {
@@ -66,7 +66,7 @@ type tfstateFiller struct {
 
 func (f *tfstateFiller) Name() string { return fillerNameTFState }
 
-func (f *tfstateFiller) FillValue(doc *cue.Value, key string, field cue.Value) error {
+func (f *tfstateFiller) FillValue(doc Document, key string, field cue.Value) error {
 	obj, err := f.state.Lookup(key)
 	if err != nil {
 		return fmt.Errorf("tfstate value (%s) not found: %w", key, err)
@@ -75,8 +75,8 @@ func (f *tfstateFiller) FillValue(doc *cue.Value, key string, field cue.Value) e
 	if accpetsOnlyInt(field) {
 		value, _ = tryDowncastToInt(value)
 	}
-	*doc = doc.FillPath(field.Path(), value)
-	return doc.Err()
+	*doc.Value = doc.Value.FillPath(field.Path(), value)
+	return doc.Value.Err()
 }
 
 func accpetsOnlyInt(field cue.Value) bool {

@@ -80,7 +80,7 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 				// not supported filler
 				return
 			}
-			_ = filler.FillValue(&doc, ret.key, value)
+			_ = filler.FillValue(Document{Filename: srcPath, Value: &doc}, ret.key, value)
 		},
 	)
 	return doc, nil
@@ -128,4 +128,9 @@ func parseDeprecatedAttribute(value cue.Value) *attributeParseResult {
 		fillerName: fillerNameEnv,
 		key:        attr.Contents(),
 	}
+}
+
+type Document struct {
+	Filename string
+	Value    *cue.Value
 }
