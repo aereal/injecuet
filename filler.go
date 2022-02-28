@@ -71,17 +71,27 @@ func (f *tfstateFiller) FillValue(doc *cue.Value, key string, field cue.Value) e
 	if err != nil {
 		return fmt.Errorf("tfstate value (%s) not found: %w", key, err)
 	}
-	acceptsInt := field.Unify(field.Context().CompileString("1")).Validate() == nil
-	acceptsFloat := field.Unify(field.Context().CompileString("1.0")).Validate() == nil
 	value := obj.Value
-	if acceptsInt && !acceptsFloat { // only int
-		switch v := obj.Value.(type) {
-		case float32:
-			value = int32(v)
-		case float64:
-			value = int64(v)
-		}
+	if accpetsOnlyInt(field) {
+		value, _ = tryDowncastToInt(value)
 	}
 	*doc = doc.FillPath(field.Path(), value)
 	return doc.Err()
+}
+
+func accpetsOnlyInt(field cue.Value) bool {
+	acceptsInt := field.Unify(field.Context().CompileString("1")).Validate() == nil
+	acceptsFloat := field.Unify(field.Context().CompileString("1.0")).Validate() == nil
+	return acceptsInt && !acceptsFloat
+}
+
+func tryDowncastToInt(x interface{}) (interface{}, bool) {
+	switch x := x.(type) {
+	case float32:
+		return int32(x), true
+	case float64:
+		return int64(x), true
+	default:
+		return x, false
+	}
 }
