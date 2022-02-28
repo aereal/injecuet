@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"github.com/fujiwara/tfstate-lookup/tfstate"
 )
 
 // Filler is CUE value filler.
@@ -36,7 +37,8 @@ func NewEnvFillter(match func(name string) bool) Filler {
 }
 
 const (
-	fillerNameEnv = "env"
+	fillerNameEnv     = "env"
+	fillerNameTFState = "tfstate"
 )
 
 type envFillter struct {
@@ -51,5 +53,35 @@ func (f *envFillter) FillValue(doc *cue.Value, key string, field cue.Value) erro
 		return fmt.Errorf("value not found: %s", key)
 	}
 	*doc = doc.FillPath(field.Path(), v)
+	return doc.Err()
+}
+
+func NewTFStateFiller(state *tfstate.TFState) Filler {
+	return &tfstateFiller{state: state}
+}
+
+type tfstateFiller struct {
+	state *tfstate.TFState
+}
+
+func (f *tfstateFiller) Name() string { return fillerNameTFState }
+
+func (f *tfstateFiller) FillValue(doc *cue.Value, key string, field cue.Value) error {
+	obj, err := f.state.Lookup(key)
+	if err != nil {
+		return fmt.Errorf("tfstate value (%s) not found: %w", key, err)
+	}
+	acceptsInt := field.Unify(field.Context().CompileString("1")).Validate() == nil
+	acceptsFloat := field.Unify(field.Context().CompileString("1.0")).Validate() == nil
+	value := obj.Value
+	if acceptsInt && !acceptsFloat { // only int
+		switch v := obj.Value.(type) {
+		case float32:
+			value = int32(v)
+		case float64:
+			value = int64(v)
+		}
+	}
+	*doc = doc.FillPath(field.Path(), value)
 	return doc.Err()
 }
