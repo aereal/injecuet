@@ -8,7 +8,6 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
-	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -68,15 +67,11 @@ func TestInject_tfstate(t *testing.T) {
 		tfstatePath string
 	}
 	cases := []testCase{
-		{"./testdata/ok_tfstate.cue", "{\n\tname: \"aereal\" @inject(tfstate,name=output.user.name)\n\tage:  17       @inject(tfstate,name=output.user.age)\n}", "./testdata/terraform/ok/terraform.tfstate"},
+		{"./testdata/ok_tfstate.cue", "{\n\t@inject(tfstate,stateURL=./terraform/ok/terraform.tfstate)\n\tname: \"aereal\" @inject(tfstate,name=output.user.name)\n\tage:  17       @inject(tfstate,name=output.user.age)\n}", "./testdata/terraform/ok/terraform.tfstate"},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("dataPath=%s tfstatePath=%s", tc.dataPath, tc.tfstatePath), func(t *testing.T) {
-			state, err := tfstate.ReadURL(tc.tfstatePath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			injector := NewInjector(NewTFStateFiller(state))
+			injector := NewInjector(NewTFStateFiller())
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)

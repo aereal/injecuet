@@ -2,7 +2,9 @@ package injecuet
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -56,8 +58,8 @@ func (f *envFillter) FillValue(doc Document, key string, field cue.Value) error 
 	return doc.Value.Err()
 }
 
-func NewTFStateFiller(state *tfstate.TFState) Filler {
-	return &tfstateFiller{state: state}
+func NewTFStateFiller() Filler {
+	return &tfstateFiller{}
 }
 
 type tfstateFiller struct {
@@ -67,6 +69,26 @@ type tfstateFiller struct {
 func (f *tfstateFiller) Name() string { return fillerNameTFState }
 
 func (f *tfstateFiller) FillValue(doc Document, key string, field cue.Value) error {
+	if f.state == nil {
+		attrs := doc.Value.Attributes(cue.DeclAttr)
+		for _, attr := range attrs {
+			url := getTFStateURL(attr)
+			if url == "" {
+				continue
+			}
+			resolved, err := resolveURL(filepath.Dir(doc.Filename), url)
+			if err != nil {
+				return fmt.Errorf("cannot resolve tfstate URL: %w", err)
+			}
+			f.state, err = tfstate.ReadURL(resolved)
+			if err != nil {
+				return fmt.Errorf("cannot read tfstate(%s): %w", url, err)
+			}
+		}
+	}
+	if f.state == nil {
+		return fmt.Errorf("tfstate-lookup is not initialized")
+	}
 	obj, err := f.state.Lookup(key)
 	if err != nil {
 		return fmt.Errorf("tfstate value (%s) not found: %w", key, err)
@@ -93,5 +115,33 @@ func tryDowncastToInt(x interface{}) (interface{}, bool) {
 		return int64(x), true
 	default:
 		return x, false
+	}
+}
+
+func getTFStateURL(attr cue.Attribute) string {
+	var ok bool
+	for i := 0; i < attr.NumArgs(); i++ {
+		k, v := attr.Arg(i)
+		if k == fillerNameTFState && v == "" {
+			ok = true
+			continue
+		}
+		if ok && k == "stateURL" {
+			return v
+		}
+	}
+	return ""
+}
+
+func resolveURL(base string, rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	switch u.Scheme {
+	case "file", "":
+		return filepath.Clean(filepath.Join(base, u.Path)), nil
+	default:
+		return "", fmt.Errorf("invalid scheme")
 	}
 }
