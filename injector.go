@@ -19,16 +19,32 @@ var (
 //
 // Deprecated: use NewInjector
 func NewEnvironmentInjector(match func(name string) bool) *Injector {
-	envFillter := NewEnvFillter(match)
-	injector := &Injector{fillers: map[string]Filler{envFillter.Name(): envFillter}}
+	envFillter := newEnvFillter(match)
+	injector := &Injector{fillers: map[string]filler{envFillter.name(): envFillter}}
 	return injector
 }
 
+type Option func(i *Injector)
+
+func WithEnvironmentVariables(filterEnv func(name string) bool) Option {
+	return func(i *Injector) {
+		filler := newEnvFillter(filterEnv)
+		i.fillers[filler.name()] = filler
+	}
+}
+
+func WithTFState() Option {
+	return func(i *Injector) {
+		filler := newTFStateFiller()
+		i.fillers[filler.name()] = filler
+	}
+}
+
 // NewInjector creates new Injector.
-func NewInjector(fillers ...Filler) *Injector {
-	i := &Injector{fillers: map[string]Filler{}}
-	for _, f := range fillers {
-		i.fillers[f.Name()] = f
+func NewInjector(options ...Option) *Injector {
+	i := &Injector{fillers: map[string]filler{}}
+	for _, opt := range options {
+		opt(i)
 	}
 	return i
 }
@@ -36,7 +52,7 @@ func NewInjector(fillers ...Filler) *Injector {
 // Injector is used for injecting provided values.
 // The injection values are given from several constructors.
 type Injector struct {
-	fillers map[string]Filler
+	fillers map[string]filler
 }
 
 func walk(v cue.Value, f func(v cue.Value)) {
@@ -80,7 +96,7 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 				// not supported filler
 				return
 			}
-			_ = filler.FillValue(Document{Filename: srcPath, Value: &doc}, ret.key, value)
+			_ = filler.fillValue(document{filename: srcPath, value: &doc}, ret.key, value)
 		},
 	)
 	return doc, nil
@@ -130,7 +146,7 @@ func parseDeprecatedAttribute(value cue.Value) *attributeParseResult {
 	}
 }
 
-type Document struct {
-	Filename string
-	Value    *cue.Value
+type document struct {
+	filename string
+	value    *cue.Value
 }

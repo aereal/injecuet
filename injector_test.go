@@ -38,7 +38,7 @@ func TestInjectOK(t *testing.T) {
 				}
 			}()
 
-			injector := NewInjector(NewEnvFillter(tc.match))
+			injector := NewInjector(WithEnvironmentVariables(tc.match))
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)
@@ -71,7 +71,7 @@ func TestInject_tfstate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("dataPath=%s tfstatePath=%s", tc.dataPath, tc.tfstatePath), func(t *testing.T) {
-			injector := NewInjector(NewTFStateFiller())
+			injector := NewInjector(WithTFState())
 			got, err := injector.Inject(tc.dataPath)
 			if err != nil {
 				t.Fatal(err)

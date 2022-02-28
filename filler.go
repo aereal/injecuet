@@ -11,19 +11,12 @@ import (
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 )
 
-// Filler is CUE value filler.
-type Filler interface {
-	// Name is unique identifier of the Filler.
-	Name() string
-
-	// FillValue fills value from the filler's source into given CUE document.
-	FillValue(doc Document, key string, field cue.Value) error
+type filler interface {
+	name() string
+	fillValue(doc document, key string, field cue.Value) error
 }
 
-// NewEnvFiller returns an new Filler that fills environment variables.
-// The filled values are determined this function called.
-// Modified environment variables are not respected after creating an Filler.
-func NewEnvFillter(match func(name string) bool) Filler {
+func newEnvFillter(match func(name string) bool) filler {
 	if match == nil {
 		match = matchAll
 	}
@@ -47,18 +40,18 @@ type envFillter struct {
 	env map[string]string
 }
 
-func (f *envFillter) Name() string { return fillerNameEnv }
+func (f *envFillter) name() string { return fillerNameEnv }
 
-func (f *envFillter) FillValue(doc Document, key string, field cue.Value) error {
+func (f *envFillter) fillValue(doc document, key string, field cue.Value) error {
 	v, ok := f.env[key]
 	if !ok {
 		return fmt.Errorf("value not found: %s", key)
 	}
-	*doc.Value = doc.Value.FillPath(field.Path(), v)
-	return doc.Value.Err()
+	*doc.value = doc.value.FillPath(field.Path(), v)
+	return doc.value.Err()
 }
 
-func NewTFStateFiller() Filler {
+func newTFStateFiller() filler {
 	return &tfstateFiller{}
 }
 
@@ -66,17 +59,17 @@ type tfstateFiller struct {
 	state *tfstate.TFState
 }
 
-func (f *tfstateFiller) Name() string { return fillerNameTFState }
+func (f *tfstateFiller) name() string { return fillerNameTFState }
 
-func (f *tfstateFiller) FillValue(doc Document, key string, field cue.Value) error {
+func (f *tfstateFiller) fillValue(doc document, key string, field cue.Value) error {
 	if f.state == nil {
-		attrs := doc.Value.Attributes(cue.DeclAttr)
+		attrs := doc.value.Attributes(cue.DeclAttr)
 		for _, attr := range attrs {
 			url := getTFStateURL(attr)
 			if url == "" {
 				continue
 			}
-			resolved, err := resolveURL(filepath.Dir(doc.Filename), url)
+			resolved, err := resolveURL(filepath.Dir(doc.filename), url)
 			if err != nil {
 				return fmt.Errorf("cannot resolve tfstate URL: %w", err)
 			}
@@ -97,8 +90,8 @@ func (f *tfstateFiller) FillValue(doc Document, key string, field cue.Value) err
 	if accpetsOnlyInt(field) {
 		value, _ = tryDowncastToInt(value)
 	}
-	*doc.Value = doc.Value.FillPath(field.Path(), value)
-	return doc.Value.Err()
+	*doc.value = doc.value.FillPath(field.Path(), value)
+	return doc.value.Err()
 }
 
 func accpetsOnlyInt(field cue.Value) bool {
