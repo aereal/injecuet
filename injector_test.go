@@ -25,6 +25,7 @@ func TestInjectOK(t *testing.T) {
 		{"./testdata/partial.cue", "{\n\tname: string @inject(env,name=X_NAME)\n\tage:  \"17\"  @inject(env,name=X_AGE)\n}", map[string]string{"X_NAME": "aereal", "X_AGE": "17"}, func(name string) bool { return strings.HasSuffix(name, "AGE") }},
 		{"./testdata/hidden1.cue", "_name: \"aereal\" @inject(env,name=X_NAME)\n", map[string]string{"X_NAME": "aereal"}, matchAll},
 		{"./testdata/hidden2.cue", "#name: \"aereal\" @inject(env,name=X_NAME)\n", map[string]string{"X_NAME": "aereal"}, matchAll},
+		{"./testdata/missing_kind.cue", "name: string @inject(name=X_NAME)\n", map[string]string{"X_NAME": "aereal"}, matchAll},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("dataPath=%s", tc.dataPath), func(t *testing.T) {
