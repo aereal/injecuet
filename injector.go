@@ -2,10 +2,13 @@ package injecuet
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/parser"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -24,8 +27,10 @@ func NewEnvironmentInjector(match func(name string) bool) *Injector {
 	return injector
 }
 
+// Option is a function to enhance Injector's behavior.
 type Option func(i *Injector)
 
+// WithEnvironmentVariables tells Injector to inject environment variables.
 func WithEnvironmentVariables(filterEnv func(name string) bool) Option {
 	return func(i *Injector) {
 		filler := newEnvFillter(filterEnv)
@@ -33,6 +38,7 @@ func WithEnvironmentVariables(filterEnv func(name string) bool) Option {
 	}
 }
 
+// WithTFState tells Injector to inject Terraform state.
 func WithTFState() Option {
 	return func(i *Injector) {
 		filler := newTFStateFiller()
@@ -40,9 +46,26 @@ func WithTFState() Option {
 	}
 }
 
+// WithLoggerOutput tells Injector to emit logs into `out`.
+func WithLoggerOutput(out io.Writer) Option {
+	return func(i *Injector) {
+		i.logger = i.logger.Output(out)
+	}
+}
+
+// WithLogLevel tells Injector to set minimum log level.
+func WithLogLevel(level zerolog.Level) Option {
+	return func(i *Injector) {
+		i.logger = i.logger.Level(level)
+	}
+}
+
 // NewInjector creates new Injector.
 func NewInjector(options ...Option) *Injector {
-	i := &Injector{fillers: map[string]filler{}}
+	i := &Injector{
+		fillers: map[string]filler{},
+		logger:  zerolog.New(os.Stderr).With().Caller().Logger(),
+	}
 	for _, opt := range options {
 		opt(i)
 	}
@@ -53,6 +76,7 @@ func NewInjector(options ...Option) *Injector {
 // The injection values are given from several constructors.
 type Injector struct {
 	fillers map[string]filler
+	logger  zerolog.Logger
 }
 
 func walk(v cue.Value, f func(v cue.Value)) {
@@ -86,17 +110,21 @@ func (i *Injector) Inject(srcPath string) (cue.Value, error) {
 	walk(
 		doc,
 		func(value cue.Value) {
+			l := i.logger.With().Str("path", value.Path().String()).Logger()
 			ret := parseAttribute(value)
 			if !ret.valid() {
-				// invalid attribute
+				l.Info().Err(ret.err).Msg("invalid attribute")
 				return
 			}
 			filler := i.fillers[ret.fillerName]
 			if filler == nil {
-				// not supported filler
+				l.Warn().Str("kind", ret.fillerName).Msg("not supported kind")
 				return
 			}
-			_ = filler.fillValue(document{filename: srcPath, value: &doc}, ret.key, value)
+			err = filler.fillValue(document{filename: srcPath, value: &doc}, ret.key, value)
+			if err != nil {
+				l.Warn().Str("key", ret.key).Err(err).Msg("failed to fill value")
+			}
 		},
 	)
 	return doc, nil
