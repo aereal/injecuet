@@ -38,9 +38,13 @@ func (a *App) Run(argv []string) int {
 	fs.BoolVar(&showVersion, "version", false, "show version")
 	fs.StringVar(&pattern, "pattern", "", "regular expression of environment variables' names to consume; the pattern must be valid as Go's regexp")
 	fs.SetOutput(a.errOut)
-	err := fs.Parse(argv[1:])
-	if err == flag.ErrHelp {
+	switch err := fs.Parse(argv[1:]); err {
+	case flag.ErrHelp:
 		return 0
+	case nil:
+		// skip
+	default:
+		return 1
 	}
 	if showVersion {
 		fmt.Fprintln(a.errOut, version)
