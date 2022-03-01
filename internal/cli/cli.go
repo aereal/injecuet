@@ -56,22 +56,12 @@ func (a *App) Run(argv []string) int {
 		return 1
 	}
 
-	out, close, err := openOutput(outPath)
-	if err != nil {
-		fmt.Fprintln(a.errOut, err.Error())
-		return 1
+	opts := runOptions{
+		srcPath: fs.Arg(0),
+		outPath: outPath,
+		pattern: pattern,
 	}
-	defer close()
-	var match func(name string) bool
-	if pattern != "" {
-		re, err := regexp.Compile(pattern)
-		if err != nil {
-			fmt.Fprintf(a.errOut, "cannot parse pattern: %s\n", err)
-			return 1
-		}
-		match = re.MatchString
-	}
-	if err := a.runMain(fs.Arg(0), out, match); err != nil {
+	if err := a.runMain(opts); err != nil {
 		fmt.Fprintf(a.errOut, "%v\n", err)
 		return 1
 	}
@@ -79,28 +69,56 @@ func (a *App) Run(argv []string) int {
 	return 0
 }
 
-func (a *App) runMain(src string, out io.Writer, match func(name string) bool) error {
-	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match), injecuet.WithTFState())
-	v, err := injector.Inject(src)
+func (a *App) runMain(opts runOptions) error {
+	match, err := opts.buildMatchFunction()
 	if err != nil {
-		return fmt.Errorf("failed to inject values to file %s: %w", src, err)
+		return err
+	}
+	out, close, err := opts.openOutput()
+	if err != nil {
+		return err
+	}
+	defer close()
+
+	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match), injecuet.WithTFState())
+	v, err := injector.Inject(opts.srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to inject values to file %s: %w", opts.srcPath, err)
 	}
 	formatted, err := format.Node(v.Syntax())
 	if err != nil {
-		return fmt.Errorf("failed to format file %s: %w", src, err)
+		return fmt.Errorf("failed to format file %s: %w", opts.srcPath, err)
 	}
 	_, _ = out.Write(formatted)
 	_, _ = out.Write([]byte{'\n'})
 	return nil
 }
 
-func openOutput(outPath string) (io.Writer, func(), error) {
-	if outPath == "" {
+type runOptions struct {
+	srcPath string
+	outPath string
+	pattern string
+}
+
+func (o runOptions) buildMatchFunction() (func(string) bool, error) {
+	var match func(string) bool
+	if o.pattern == "" {
+		return match, nil
+	}
+	re, err := regexp.Compile(o.pattern)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse pattern: %w", err)
+	}
+	return re.MatchString, nil
+}
+
+func (o runOptions) openOutput() (io.Writer, func(), error) {
+	if o.outPath == "" {
 		return os.Stdout, func() {}, nil
 	}
-	f, err := os.Create(outPath)
+	f, err := os.Create(o.outPath)
 	if err != nil {
-		return nil, func() {}, fmt.Errorf("cannot open file %s: %w", outPath, err)
+		return nil, func() {}, fmt.Errorf("cannot open file %s: %w", o.outPath, err)
 	}
 	return f, func() { f.Close() }, nil
 }
