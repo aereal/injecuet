@@ -19,6 +19,7 @@ require (
 	github.com/hashicorp/go-tfe v0.26.0 // indirect
 	github.com/itchyny/gojq v0.12.6 // indirect
 	github.com/mattn/go-ieproxy v0.0.3 // indirect
+	github.com/rs/zerolog v1.26.1
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect

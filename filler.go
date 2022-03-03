@@ -64,6 +64,7 @@ func (f *tfstateFiller) name() string { return fillerNameTFState }
 func (f *tfstateFiller) fillValue(doc document, key string, field cue.Value) error {
 	if f.state == nil {
 		attrs := doc.value.Attributes(cue.DeclAttr)
+		var initialized bool
 		for _, attr := range attrs {
 			url := getTFStateURL(attr)
 			if url == "" {
@@ -77,10 +78,12 @@ func (f *tfstateFiller) fillValue(doc document, key string, field cue.Value) err
 			if err != nil {
 				return fmt.Errorf("cannot read tfstate(%s): %w", url, err)
 			}
+			initialized = true
+			break
 		}
-	}
-	if f.state == nil {
-		return fmt.Errorf("tfstate-lookup is not initialized")
+		if !initialized {
+			return fmt.Errorf("tfstate-lookup is not initialized")
+		}
 	}
 	obj, err := f.state.Lookup(key)
 	if err != nil {
