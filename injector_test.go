@@ -67,7 +67,8 @@ func TestInject_tfstate(t *testing.T) {
 		tfstatePath string
 	}
 	cases := []testCase{
-		{"./testdata/ok_tfstate.cue", "{\n\t@inject(tfstate,stateURL=./terraform/ok/terraform.tfstate)\n\tname: \"aereal\" @inject(tfstate,name=output.user.name)\n\tage:  17       @inject(tfstate,name=output.user.age)\n}", "./testdata/terraform/ok/terraform.tfstate"},
+		{"./testdata/ok_tfstate.cue", "{\n\t@inject(tfstate,stateURL=\"./terraform/ok/terraform.tfstate\")\n\tname: \"aereal\" @inject(tfstate,name=\"output.user.name\")\n\tage:  17       @inject(tfstate,name=\"output.user.age\")\n}", "./testdata/terraform/ok/terraform.tfstate"},
+		{"./testdata/ok_tfstate_relative_path.cue", "{\n\t@inject(tfstate,stateURL=\"../testdata/terraform/ok/terraform.tfstate\")\n\tname: \"aereal\" @inject(tfstate,name=\"output.user.name\")\n\tage:  17       @inject(tfstate,name=\"output.user.age\")\n}", "./testdata/terraform/ok/terraform.tfstate"},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("dataPath=%s tfstatePath=%s", tc.dataPath, tc.tfstatePath), func(t *testing.T) {

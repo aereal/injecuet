@@ -12,8 +12,8 @@ func Example_tfstate() {
 		panic(err)
 	}
 	// Output: {
-	// 	@inject(tfstate,stateURL=./terraform/ok/terraform.tfstate)
-	// 	name: "aereal" @inject(tfstate,name=output.user.name)
-	// 	age:  17       @inject(tfstate,name=output.user.age)
+	// 	@inject(tfstate,stateURL="./terraform/ok/terraform.tfstate")
+	// 	name: "aereal" @inject(tfstate,name="output.user.name")
+	// 	age:  17       @inject(tfstate,name="output.user.age")
 	// }
 }
