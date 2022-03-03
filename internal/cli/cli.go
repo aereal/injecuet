@@ -59,11 +59,13 @@ func (a *App) Run(argv []string) int {
 		return 1
 	}
 
+	logger := zerolog.New(a.errOut).Level(level.Level)
 	opts := runOptions{
 		srcPath:  fs.Arg(0),
 		outPath:  outPath,
 		pattern:  pattern,
 		logLevel: level.Level,
+		logger:   logger,
 	}
 	if err := a.runMain(opts); err != nil {
 		fmt.Fprintf(a.errOut, "%v\n", err)
@@ -84,7 +86,7 @@ func (a *App) runMain(opts runOptions) error {
 	}
 	defer close()
 
-	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match), injecuet.WithTFState(), injecuet.WithLogLevel(opts.logLevel))
+	injector := injecuet.NewInjector(injecuet.WithEnvironmentVariables(match), injecuet.WithTFState(), injecuet.WithLogLevel(opts.logLevel), injecuet.WithLogger(opts.logger))
 	v, err := injector.Inject(opts.srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to inject values to file %s: %w", opts.srcPath, err)
@@ -103,6 +105,7 @@ type runOptions struct {
 	outPath  string
 	pattern  string
 	logLevel zerolog.Level
+	logger   zerolog.Logger
 }
 
 func (o runOptions) buildMatchFunction() (func(string) bool, error) {
@@ -119,12 +122,14 @@ func (o runOptions) buildMatchFunction() (func(string) bool, error) {
 
 func (o runOptions) openOutput() (io.Writer, func(), error) {
 	if o.outPath == "" {
+		o.logger.Debug().Msg("use stdout as output destination")
 		return os.Stdout, func() {}, nil
 	}
 	f, err := os.Create(o.outPath)
 	if err != nil {
 		return nil, func() {}, fmt.Errorf("cannot open file %s: %w", o.outPath, err)
 	}
+	o.logger.Debug().Msgf("use %s as output destination", o.outPath)
 	return f, func() { f.Close() }, nil
 }
 

@@ -60,6 +60,14 @@ func WithLogLevel(level zerolog.Level) Option {
 	}
 }
 
+// WithLogger tells Injector to use given logger.
+// This option is for internal use.
+func WithLogger(logger zerolog.Logger) Option {
+	return func(i *Injector) {
+		i.logger = logger
+	}
+}
+
 // NewInjector creates new Injector.
 func NewInjector(options ...Option) *Injector {
 	i := &Injector{
