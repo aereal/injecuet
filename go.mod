@@ -14,7 +14,7 @@ require (
 	github.com/fujiwara/tfstate-lookup v0.4.2
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-tfe v0.26.0 // indirect
 	github.com/itchyny/gojq v0.12.6 // indirect
