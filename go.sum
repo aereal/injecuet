@@ -152,8 +152,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239/go.mod h1:Gdwt2ce0yfBxPvZrHkprdPPTTS3N5rwmLE8T22KBXlw=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
-github.com/fujiwara/tfstate-lookup v0.4.3 h1:2FNnd1ISxmIpGyLWPxA0yIdUFYDueSnRsxuDg0sfV7A=
-github.com/fujiwara/tfstate-lookup v0.4.3/go.mod h1:WaSNeC69vL1r+l4YDFTyJJDR2BrYofJmiHZtEBAt82M=
+github.com/fujiwara/tfstate-lookup v0.4.4 h1:HxVsq62Tk9W1RcbPPq7/c1s0Qd4bBFkccciFxMXZpLI=
+github.com/fujiwara/tfstate-lookup v0.4.4/go.mod h1:WaSNeC69vL1r+l4YDFTyJJDR2BrYofJmiHZtEBAt82M=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
